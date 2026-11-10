@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chess Stream Battle</title>
+<style>
+:root{color-scheme:dark;--bg:#101522;--panel:#1b2435;--line:#35435d;--text:#f7f8fc;--muted:#bac4d6;--mint:#9be1d2;--gold:#f4d17b;--red:#f29b9b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#283650 0,#101522 60%);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh}
+main{max-width:1250px;margin:auto;padding:clamp(14px,3vw,34px)}header{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:clamp(26px,4vw,42px);margin:0}.subtitle{font-size:clamp(14px,1.7vw,19px);color:var(--muted);margin-top:6px}
+.pill{border:1px solid var(--line);border-radius:99px;padding:9px 15px;color:var(--mint);font-size:14px}
+.tabs{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}.tab{background:#27344a;border:1px solid var(--line);color:var(--text);padding:12px 15px;font-size:15px}.tab.active{background:var(--mint);color:#101923}
+.panel{background:linear-gradient(145deg,#202c42,#172132);border:2px solid var(--line);border-radius:24px;padding:clamp(18px,4vw,42px);text-align:center;min-height:390px;display:flex;flex-direction:column;justify-content:center;align-items:center;box-shadow:0 20px 60px #0004}
+.eyebrow{font-size:clamp(16px,2vw,22px);font-weight:bold;color:var(--mint);letter-spacing:.04em;text-transform:uppercase}
+.headline{font-size:clamp(34px,6vw,72px);font-weight:850;line-height:1.12;max-width:1050px;margin:20px auto}
+.desc{font-size:clamp(19px,2.5vw,29px);line-height:1.35;color:#e0e6f1;max-width:950px}
+.note{font-size:15px;color:var(--muted);margin-top:17px;max-width:900px}
+.controls{display:flex;gap:11px;flex-wrap:wrap;justify-content:center;margin:18px 0}
+button,select,input,textarea{font:inherit;border-radius:13px;padding:13px 17px;font-weight:700;border:0}
+button{cursor:pointer;background:var(--mint);color:#101923;font-size:clamp(16px,1.8vw,20px)}button.secondary{background:#27344a;border:1px solid var(--line);color:var(--text)}button.gold{background:var(--gold);color:#1c1b16}button.red{background:#633c48;color:white}button:hover{filter:brightness(1.08)}
+select,input,textarea{background:#111a29;color:var(--text);border:1px solid var(--line);font-size:16px}select{min-width:220px}
+.row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin:10px 0}.timer{font-size:clamp(32px,5vw,54px);font-weight:850;color:var(--gold);font-variant-numeric:tabular-nums}
+.info{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}.chip{background:#111a29;border:1px solid var(--line);border-radius:12px;padding:10px 14px;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:900px;margin-top:18px}.two button{background:#27344a;color:var(--text);border:1px solid var(--line)}
+input[type=number]{width:120px}textarea{width:min(100%,700px);min-height:110px;font-weight:400}
+.hidden{display:none!important}.small{font-size:14px!important;padding:9px 12px!important}
+footer{text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
+body.presentation main{max-width:1550px}body.presentation header,body.presentation .tabs,body.presentation .below,body.presentation footer{display:none}body.presentation .panel{min-height:88vh;border:0;background:transparent;box-shadow:none}body.presentation .headline{font-size:clamp(48px,8vw,110px);max-width:1350px}body.presentation .desc{font-size:clamp(25px,3.2vw,42px);max-width:1200px}body.presentation .eyebrow{font-size:clamp(20px,2.3vw,32px)}body.presentation .controls{position:fixed;bottom:12px;left:0;right:0;opacity:.12;transition:opacity .2s}body.presentation .controls:hover{opacity:1}
+@media(max-width:650px){.panel{min-height:340px}.two{grid-template-columns:1fr}.controls button{width:100%}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>♟ Chess Stream Battle</h1><div class="subtitle">Интерактивные шахматные батлы для прямых эфиров</div></div><div class="pill">Зрители участвуют через комментарии</div></header>
+
+<nav class="tabs">
+<button class="tab active" data-mode="roulette">🎲 Шахматная рулетка</button>
+<button class="tab" data-mode="audience">👥 Зрители VS Стример</button>
+<button class="tab" data-mode="survivor">⏱ Выживание</button>
+<button class="tab" data-mode="elo">🕵️ Угадай ELO</button>
+<button class="tab" data-mode="tasks">✨ Случайные задания</button>
+<button class="tab" data-mode="saboteur">😈 Вредитель</button>
+</nav>
+
+<section class="panel" aria-live="polite">
+<div class="eyebrow" id="eyebrow">ШАХМАТНАЯ РУЛЕТКА</div>
+<div class="headline" id="headline">После каждого хода — новое правило!</div>
+<div class="desc" id="desc">Стример делает ход, нажимает кнопку и получает случайное ограничение на следующий ход.</div>
+<div class="note" id="note">Если правило невозможно выполнить по позиции, нажмите «Другое правило».</div>
+<div class="row hidden" id="timerArea"><div class="timer" id="timer">01:00</div><div class="chip" id="timerLabel">До конца испытания</div></div>
+<div class="row hidden" id="survivorArea"><div class="timer" id="survivorTimer">01:00</div><div class="chip">До следующего ограничения</div></div>
+<div class="info" id="info"></div>
+</section>
+
+<div class="controls">
+<button id="mainAction">🎲 Получить правило</button>
+<button class="gold" id="secondaryAction">Другое правило</button>
+<button class="secondary" id="present">На весь экран</button>
+</div>
+
+<div class="below">
+<div class="row" id="filterRow"><label for="categoryFilter">Категория заданий:</label><select id="categoryFilter"><option value="all">Все</option><option value="fun">Развлекательные</option><option value="chat">Интерактив с чатом</option><option value="chess">Шахматные</option><option value="calm">Спокойные</option></select></div>
+<div class="row"><button class="secondary small" id="copy">Скопировать текущее задание</button><button class="secondary small" id="reset">Сбросить режим</button></div>
+<p class="note" style="text-align:center;margin:18px auto">Зрителям не нужно открывать сайт: они участвуют обычными комментариями в прямом эфире TikTok. Стример или модератор читает чат и вручную учитывает ответы.</p>
+</div>
+<footer>Для трансляции нажмите «На весь экран» и демонстрируйте окно браузера. Выход — Esc.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const pieceNames=["пешкой","слоном","конём","ладьёй","ферзём","королём"];
+const pieceBan=["Нельзя ходить пешками","Нельзя ходить слонами","Нельзя ходить конями","Нельзя ходить ладьями","Нельзя ходить ферзём","Нельзя ходить королём"];
+const roulette=[
+"Следующий ход — только пешкой","Следующий ход — только слоном","Следующий ход — только конём","Следующий ход — только ладьёй","Следующий ход — только ферзём","Следующий ход — только королём",
+...pieceBan,
+"Нельзя брать фигуры следующим ходом","Следующий ход — только фигурой, которая ещё не ходила","Нельзя двигать одну и ту же фигуру два раза подряд","Следующий ход должен развивать фигуру","Следующий ход — пешкой на одну клетку, если это легально","Нельзя рокировать в этой партии","Следующий ход должен атаковать фигуру соперника","Нельзя ходить фигурой, которая сейчас защищает другую фигуру","Следующий ход — только фигурой с вашей половины доски"
+];
+
+const survivorRules=[
+"Нельзя ходить пешками","Нельзя ходить конями","Нельзя ходить слонами","Нельзя ходить ладьями","Нельзя ходить ферзём",
+"Нельзя брать фигуры","Нельзя ходить одной и той же фигурой два раза подряд","Можно ходить только фигурами, которые ещё не двигались",
+"Следующий ход должен атаковать фигуру соперника","Нельзя двигать пешки с крайней вертикали","Нельзя делать размены","Следующий ход — только пешкой или конём",
+"Нельзя ходить ферзём и ладьями","Нужно каждый ход проверять все шахи и угрозы перед нажатием часов","Нельзя брать защищённую фигуру"
+];
+const funTasks=[
+["fun","Шахматный аукцион","Чат предлагает, какую фигуру стример должен постараться разменять первой. Стример выбирает выполнимую цель."],
+["fun","Угадай следующий ход","Зрители пишут ход в комментариях. Стример выбирает один из легальных вариантов, предложенных чатом."],
+["fun","Комментатор на 30 секунд","Стример спокойно объясняет один свой ход — без роли, актёрства и смены голоса."],
+["fun","Чат — тренер","Зрители предлагают план на ближайшие три хода. Стример выбирает разумный вариант."],
+["fun","Охота на ферзя","Чат предлагает, как безопасно атаковать ферзя соперника. Стример ищет возможность."],
+["fun","Секретная миссия","Выберите фигуру и попробуйте улучшить её положение за следующие пять ходов."],
+["fun","Тихий вызов","Следующие три хода — без комментариев, только концентрация на доске."],
+["fun","Угадай оценку позиции","Стример оценивает позицию: лучше белым, лучше чёрным или равенство. Чат пишет свой прогноз."],
+["fun","Пешечная миссия","Попробуйте продвинуть пешку до шестой горизонтали, не отдавая её бесплатно."],
+["fun","Чат выбирает дебют","Зрители предлагают дебют или первую идею. Стример выбирает знакомый и комфортный вариант."],
+["fun","Один ход — одна идея","Перед следующим ходом стример называет одну цель: защита, развитие, центр или атака."],
+["fun","Найди слабость","Чат пишет, какую слабость заметил на доске. Стример проверяет ответы."],
+["fun","Прогноз на исход","Зрители пишут, кто выиграет партию и почему — одним коротким сообщением."],
+["fun","Охота за вилкой","В течение пяти ходов попробуйте создать тактическую вилку."],
+["fun","Без спешки","Следующий ход обдумывается не менее 15 секунд. Чат может предложить кандидаты."],
+["fun","Выбери план","Чат выбирает: укрепить короля, занять центр или активировать худшую фигуру."],
+["fun","Шахматная загадка","Покажите позицию и попросите чат найти шах, мат в один или выигрыш фигуры."],
+["fun","Реванш зрителя","Зритель предлагает дебютный ход за соперника. Стример отвечает обычным ходом."],
+["fun","Материал или инициатива?","Чат решает, что важнее в текущей позиции: сохранить материал или получить активность."],
+["fun","Три кандидата","Стример показывает три возможных хода. Чат пишет 1, 2 или 3."]
+];
+const extraTasks=[
+["chat","Чат выбирает фигуру для следующего плана","Напишите в комментариях: пешка, конь, слон, ладья или ферзь. Стример выберет выполнимую идею."],
+["chat","Кто заметил угрозу?","Зрители пишут, чем грозит последний ход соперника."],
+["chat","Угадайте, что я задумал","Стример не раскрывает план сразу. Чат пробует угадать его по позиции."],
+["chat","Чат выбирает сторону атаки","Королевский или ферзевый фланг? Напишите свой выбор в комментариях."],
+["chat","Найдите лучший ответ","Зрители предлагают кандидатские ходы, стример проверяет их на доске."],
+["chat","Оцените позицию цифрой","Чат пишет +1, 0 или −1 по ощущениям. Стример сравнивает мнения."],
+["chat","Предскажите следующий размен","Зрители называют, какие фигуры могут разменяться следующими."],
+["chat","Вопрос новичкам","Как называется ход, когда король и ладья двигаются одновременно? Ответы — в чат."],
+["chat","Шахматный блиц-вопрос","Сколько клеток на шахматной доске? Ответьте в комментариях."],
+["chat","Найдите лишнюю фигуру","Покажите позицию и спросите чат, какая фигура расположена неудачно."]
+];
+let mode="roulette",currentText="",timerId=null,remaining=60,survivorRemaining=60,survivorElapsed=0,survivorActive=false,saboteurStarted=false,saboteurTurn=1,saboteurMoves=0;
+function choose(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function show(eyebrow,title,desc,note=""){ $("eyebrow").textContent=eyebrow;$("headline").textContent=title;$("desc").textContent=desc;$("note").textContent=note;currentText=title+" — "+desc}
+function setMode(m){
+ stopTimers();mode=m;document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
+ $("timerArea").classList.toggle("hidden",m!=="audience");$("survivorArea").classList.toggle("hidden",m!=="survivor");
+ $("filterRow").classList.toggle("hidden",m!=="tasks");
+ if(m==="roulette"){show("ШАХМАТНАЯ РУЛЕТКА","После каждого хода — новое правило!","Стример делает ход, затем нажимает «Получить правило». Ограничение действует до следующего хода.","Если правило невозможно выполнить в текущей позиции, нажмите «Другое правило» и возьмите новое.");$("mainAction").textContent="🎲 Получить правило";$("secondaryAction").textContent="Другое правило"}
+ if(m==="audience"){remaining=60;updateTimer();show("ЗРИТЕЛИ VS СТРИМЕР","Зрители VS Стример!","Зрители сами придумывают испытание и пишут его в чат. Стример принимает вызов и старается продержаться одну минуту.","Модератор выбирает испытание из предложений зрителей. Здесь нет случайных заданий — только таймер на одну минуту.");$("mainAction").textContent="▶ Запустить таймер";$("info").innerHTML='<span class="chip">Испытание придумывает чат</span><span class="chip">Продолжительность: 1 минута</span>'}
+ if(m==="survivor"){survivorRemaining=60;survivorElapsed=0;survivorActive=false;updateSurvivor();show("ВЫЖИВАНИЕ","Сколько минут продержишься?","Каждую минуту появляется новое ограничение. Продолжай играть и проверяй, сколько раундов выдержишь.","Если ограничение невозможно из-за позиции, можно заменить его другим. Цель — продержаться как можно дольше.");$("mainAction").textContent="▶ Начать испытание";$("secondaryAction").textContent="Следующее ограничение";$("info").innerHTML='<span class="chip">Новое правило каждую минуту</span><span class="chip" id="roundChip">Раунд: 0</span>'}
+ if(m==="elo"){show("УГАДАЙ ELO","Угадай ELO игрока!","Покажите зрителям анонимную партию или фрагмент игры. Предложите им оценить силу шахматиста по его решениям, стилю и качеству ходов.","После обсуждения можно раскрыть настоящий рейтинг игрока и сравнить его с впечатлением зрителей.")}
+ if(m==="tasks"){show("СЛУЧАЙНОЕ ЗАДАНИЕ","Выбери задание для батла","Развлекательные мини-испытания и идеи для взаимодействия со зрителями.","Зрителям достаточно писать в комментариях во время прямого эфира TikTok.");$("mainAction").textContent="✨ Получить задание";$("secondaryAction").textContent="Другое задание"}
+ if(m==="saboteur"){show("ВРЕДИТЕЛЬ","Случайная партия — кто победит?","Стример 1 старается привести свою сторону к победе. Стример 2 — Вредитель: делает легальные ходы, намеренно ухудшая положение своей стороны, но не жертвуя фигуры.","Откройте случайную партию на шахматной платформе. Оба стримера по очереди ходят за одну и ту же сторону; после каждого их хода соперник отвечает обычным образом.");$("mainAction").textContent="▶ Начать партию";$("info").innerHTML='<span class="chip">Стример 1: играет на победу</span><span class="chip">Стример 2: ухудшает позицию без потери фигур</span><span class="chip">Ходы по очереди</span>'}
+ $("info").classList.toggle("hidden",!["audience","survivor","saboteur"].includes(m));
+ $("mainAction").classList.toggle("hidden",m==="elo");
+ $("secondaryAction").classList.toggle("hidden",m==="elo"||m==="saboteur"||m==="audience");
+ if(m==="saboteur"){saboteurStarted=false;saboteurTurn=1;saboteurMoves=0;updateSaboteur()}
+}
+function roulettePick(){let r=choose(roulette);show("ШАХМАТНАЯ РУЛЕТКА",r,"Это правило действует на следующий ход стримера.","Сделайте ход по правилу. Если выполнить его легально невозможно — нажмите «Другое правило».")}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function updateTimer(){$("timer").textContent=fmt(remaining)}
+function stopTimers(){if(timerId){clearInterval(timerId);timerId=null}survivorActive=false}
+function startAudience(){stopTimers();remaining=60;updateTimer();timerId=setInterval(()=>{remaining--;updateTimer();if(remaining<=0){clearInterval(timerId);timerId=null;show("УСПЕХ!","Испытание пройдено!","Стример справился с испытанием. Чат может придумать следующий вызов.","Можно запустить таймер ещё раз для нового испытания.")}},1000)}
+function updateSurvivor(){$("survivorTimer").textContent=fmt(survivorRemaining);let c=$("roundChip");if(c)c.textContent="Раунд: "+survivorElapsed}
+function startSurvivor(){stopTimers();survivorActive=true;survivorRemaining=60;survivorElapsed=0;survivorPick();updateSurvivor();timerId=setInterval(()=>{survivorRemaining--;updateSurvivor();if(survivorRemaining<=0){survivorElapsed++;survivorRemaining=60;survivorPick();updateSurvivor()}},1000)}
+function survivorPick(){let r=choose(survivorRules);show("ВЫЖИВАНИЕ · РАУНД "+(survivorElapsed+1),r,"Это ограничение действует одну минуту. По сигналу появится следующее.","Если правило невозможно выполнить в текущей позиции, замените его новым. Считайте, сколько раундов продержались.")}
+function updateSaboteur(){
+ if(!saboteurStarted){
+  show("ВРЕДИТЕЛЬ","Случайная партия — кто победит?","Стример 1 старается привести свою сторону к победе. Стример 2 — Вредитель: делает легальные ходы, намеренно ухудшая положение своей стороны, но не жертвуя фигуры.","Откройте случайную партию на шахматной платформе. Оба стримера по очереди ходят за одну и ту же сторону; после каждого их хода соперник отвечает обычным образом.");
+  $("mainAction").textContent="▶ Начать партию";
+  return;
+ }
+ const isSaboteur=saboteurTurn===2;
+ show(isSaboteur?"ВРЕДИТЕЛЬ · ХОД 2":"ВРЕДИТЕЛЬ · ХОД 1",isSaboteur?"ХОД ВРЕДИТЕЛЯ":"ХОД СТРИМЕРА 1",isSaboteur?"Выбери легальный ход, который ухудшает положение своей стороны: ослабь короля, испорти пешечную структуру или ухудши расположение фигур. Не жертвуй фигуры и не допускай их бесплатной потери.":"Найди сильнейший ход и постарайся улучшить позицию своей стороны. Твоя цель — выиграть партию, несмотря на действия Вредителя.","Сделано ходов участниками: "+saboteurMoves+". После хода нажми кнопку, чтобы передать очередь второму стримеру. Соперник отвечает между вашими ходами.");
+ $("mainAction").textContent="✓ Ход сделан — передать очередь";
+}
+function saboteurAction(){
+ if(!saboteurStarted){saboteurStarted=true;saboteurTurn=1;saboteurMoves=0;}
+ else {saboteurMoves++;saboteurTurn=saboteurTurn===1?2:1;}
+ updateSaboteur();
+}
+function taskPick(){let f=$("categoryFilter").value;let pool=[...funTasks,...extraTasks,...[
+["chess","Найдите лучший ход","Посмотрите на позицию и выберите самый сильный ход."],
+["chess","Найдите шах","Проверьте, есть ли безопасный шах."],
+["calm","Пауза на оценку позиции","Оцените материал, короля и активность фигур."],
+["calm","Улучшите худшую фигуру","Найдите фигуру, которая стоит менее активно остальных."]
+]];if(f!=="all")pool=pool.filter(t=>t[0]===f);let t=choose(pool);show("СЛУЧАЙНОЕ ЗАДАНИЕ · "+t[0].toUpperCase(),t[1],t[2],"Можно выполнять в своём темпе. Чат участвует через комментарии.")}
+$("mainAction").onclick=()=>{if(mode==="roulette")roulettePick();else if(mode==="audience")startAudience();else if(mode==="survivor")startSurvivor();else if(mode==="saboteur")saboteurAction();else if(mode==="tasks")taskPick()};
+$("secondaryAction").onclick=()=>{if(mode==="roulette")roulettePick();else if(mode==="survivor")survivorPick();else if(mode==="tasks")taskPick()};
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+$("present").onclick=async()=>{document.body.classList.toggle("presentation");try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement)document.body.classList.remove("presentation")});
+$("copy").onclick=async()=>{if(!currentText)return;try{await navigator.clipboard.writeText(currentText);$("copy").textContent="Скопировано ✓";setTimeout(()=>$("copy").textContent="Скопировать текущее задание",1200)}catch(e){alert(currentText)}};
+$("reset").onclick=()=>{stopTimers();setMode(mode)};
+setMode("roulette");
+</script>
+</body></html>
